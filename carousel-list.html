@@ -1,0 +1,122 @@
+
+<!--
+ * @Description: 
+ * @Author: handongliang
+ * @Date: 2023-08-22 13:46:37
+ * @LastEditTime: 2023-09-04 13:27:03
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>carousel-list</title>
+</head>
+<style>
+    .container {
+        width: 400px;
+        height: 240px;
+        overflow: hidden;
+    }
+
+    .item {
+        height: 60px;
+        box-sizing: border-box;
+        background: rgb(10, 115, 255);
+        color: #fff;
+    }
+
+    .item:nth-child(odd) {
+        background: rgb(36, 130, 255);
+    }
+</style>
+
+<body>
+    <div class="container">
+        <div class="item">1</div>
+        <div class="item">2</div>
+        <div class="item">3</div>
+        <div class="item">4</div>
+        <div class="item">5</div>
+    </div>
+</body>
+
+</html>
+<script>
+    const container = document.querySelector('.container');
+    const item = document.querySelector('.item');
+    const data = [1, 2, 3, 4, 5, 6, 7]
+    let currentIndex = 0;
+    let animationId;
+    let animationInProgress = false;
+    let animationWaitingPause = false;
+    const rowsCount = 4; // 同屏出现的item条数（不能大于 animationItemNum）
+    const animationItemNum = 1;  // 单个循环上移的item条数
+    const animationExecutionTime = 300; //目标item出现到消失的时长
+    const duration = 2000; // 动画时间间隔
+    const itemHeight = item.offsetHeight; //单个item的高度
+    let stepNumber = rowsCount + animationItemNum;
+    let startTime = null;
+    
+    const scrolllist = () => {
+        currentIndex = (currentIndex + animationItemNum) % data.length;
+        const items = document.querySelectorAll('.item');
+        let dataArray = data.concat(data).slice(currentIndex, currentIndex + stepNumber)
+        items.forEach((item, index) => {
+            item.style.transform = `translateY(0px)`;
+            item.textContent = dataArray[index]
+        })
+    }
+
+    function animateScroll(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const elapsedTime = timestamp - startTime
+        const easedProgress = Math.min(elapsedTime / animationExecutionTime, 1);
+        const translateYValue = Math.max((itemHeight * animationItemNum) * easedProgress);
+        const items = document.querySelectorAll('.item');
+        for (const item of items) {
+            item.style.transform = `translateY(-${translateYValue}px)`;
+        }
+        if (elapsedTime < duration) {
+            animationId = window.requestAnimationFrame(animateScroll);
+        } else {
+            startTime = null
+            scrolllist();
+            animationId = window.requestAnimationFrame(animateScroll);
+        }
+        // 等待动画完成一次完整的 translateY 后才停止动画
+        if (easedProgress == 1) {
+            animationInProgress = false
+            if (animationWaitingPause) {
+                stopAnimation();
+                animationWaitingPause = false;
+            }
+        } else {
+            animationInProgress = true
+        }
+    }
+
+    function startAnimation() {
+        animationId = window.requestAnimationFrame(animateScroll);
+    }
+
+    function stopAnimation() {
+        window.cancelAnimationFrame(animationId);
+    }
+
+    container.addEventListener('mouseenter', () => {
+        if (animationInProgress) {
+            animationWaitingPause = true;
+        } else {
+            stopAnimation();
+        }
+    });
+
+    container.addEventListener('mouseleave', () => {
+        startAnimation();
+    });
+    setTimeout(() => {
+        startAnimation();
+    }, duration);
+</script>
